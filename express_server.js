@@ -1,9 +1,11 @@
 const express = require("express");
+const bodyParser = require('body-parser');
 const app = express();
 const PORT = 8080;
 
 
 app.set("view engine", "ejs");
+app.use(bodyParser.urlencoded({extended: true}));
 
 
 const urlDatabase =  {
@@ -21,17 +23,37 @@ app.get("/urls", (req, res) => {
   res.render("urls_index", templateVars);
 });
 
+app.get("/urls/new", (req, res) => {
+  res.render("urls_new");
+});
+
+app.post("/urls", (req, res) => {
+  console.log(req.body);
+  res.send("OK");
+});
+
 app.get("/hello", (req, res) => {
   const templateVars = {greeting: 'Hello World!'};
   res.render("hello_world", templateVars);
 });
 
+
 app.get("/urls/:shortURL", (req, res) => {
-  //req.params 
+  //req.params
   console.log("shortURL", req.params.shortURL);
   const templateVars = {shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL]};
   res.render("urls_show", templateVars);
 });
+
+
+
+//
+app.get("/urls/:id", (req, res) => {
+
+  res.render("urls_new");
+});
+
+
 
 app.get("/urls.json", (req, res) => {
   res.json(urlDatabase);
