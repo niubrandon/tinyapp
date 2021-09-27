@@ -11,7 +11,6 @@ app.use(bodyParser.urlencoded({extended: true}));
 const generateRandomString = () => {
   const str = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
   let result = "";
-  //let randomNum = Math.floor(Math.random() * 61);
   for (let i = 0; i < 6; i++) {
     result += str[Math.floor(Math.random() * 61)];
   }
@@ -39,8 +38,10 @@ app.get("/urls/new", (req, res) => {
 
 app.post("/urls", (req, res) => {
   console.log(req.body);
-  urlDatabase[generateRandomString()] = req.body.longURL;
+  const shortURL = generateRandomString();
+  urlDatabase[shortURL] = req.body.longURL;
   console.log("updated databse", urlDatabase);
+  res.redirect(`/urls/${shortURL}`);
   res.send("OK");
 });
 
@@ -57,6 +58,12 @@ app.get("/urls/:shortURL", (req, res) => {
   res.render("urls_show", templateVars);
 });
 
+app.get("/u/:shortURL", (req, res) => {
+  console.log("re-read from u", req.params);
+  const longURL = urlDatabase[req.params.shortURL];
+  console.log("longURL is:", longURL);
+  res.redirect(longURL);
+});
 
 
 //
