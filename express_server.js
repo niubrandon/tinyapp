@@ -8,6 +8,16 @@ app.set("view engine", "ejs");
 app.use(bodyParser.urlencoded({extended: true}));
 
 
+const generateRandomString = () => {
+  const str = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  let result = "";
+  //let randomNum = Math.floor(Math.random() * 61);
+  for (let i = 0; i < 6; i++) {
+    result += str[Math.floor(Math.random() * 61)];
+  }
+  return result;
+};
+
 const urlDatabase =  {
   "b2xVn2": "http://www.lighthouselabs.ca",
   "9sm5xK": "http://www.google.com"
@@ -29,6 +39,8 @@ app.get("/urls/new", (req, res) => {
 
 app.post("/urls", (req, res) => {
   console.log(req.body);
+  urlDatabase[generateRandomString()] = req.body.longURL;
+  console.log("updated databse", urlDatabase);
   res.send("OK");
 });
 
