@@ -50,6 +50,14 @@ app.get("/hello", (req, res) => {
   res.render("hello_world", templateVars);
 });
 
+app.post("/urls/:shortURL/delete", (req, res) => {
+  console.log("urls from post delete", req.params["shortURL"]);
+  //delete
+  delete urlDatabase[req.params["shortURL"]];
+
+  console.log("deleted:", urlDatabase);
+  res.redirect("/urls");
+});
 
 app.get("/urls/:shortURL", (req, res) => {
   //req.params
