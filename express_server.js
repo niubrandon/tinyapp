@@ -50,12 +50,28 @@ app.get("/hello", (req, res) => {
   res.render("hello_world", templateVars);
 });
 
+//redirect when clicked the update button
+app.post("/urls/:shortURL/update", (req, res) => {
+  console.log("urls from post update", req.params.shortURL);
+  //redirect to urls_show
+  res.redirect(`/urls/${req.params.shortURL}`);
+});
+
+//redirect when clicked the delete button
 app.post("/urls/:shortURL/delete", (req, res) => {
   console.log("urls from post delete", req.params["shortURL"]);
   //delete
   delete urlDatabase[req.params["shortURL"]];
 
   console.log("deleted:", urlDatabase);
+  res.redirect("/urls");
+});
+
+//post update the updated url
+app.post("/urls/:id", (req, res) => {
+  console.log("post the updated the URL link", req.params, req.body.updatedFullUrl);
+  //update database
+  urlDatabase[req.params.id] = req.body.updatedFullUrl;
   res.redirect("/urls");
 });
 
