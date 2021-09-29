@@ -25,15 +25,46 @@ const urlDatabase =  {
 //usersDB
 const usersDatabase = {
   "a1Xb7z": {
-    id: "a1Xb7z",
+    userID: "a1Xb7z",
     email: "admin@tinyapp.com",
     password: "super-admin"
   },
   "z2Hc9a": {
-    id: "z2Hc9a",
+    userID: "z2Hc9a",
     email: "support@tinyapp.com",
     password: "super-support"
   }
+};
+
+const findUsers = (objDB, userEmail) => {
+
+  for (let user in objDB) {
+
+    if (objDB[user]["email"] === userEmail) {
+      return true;
+    }
+
+  }
+  return false;
+};
+
+const findUserFromEmail = (objDB, userEmail) => {
+ 
+  for (let user in objDB) {
+   
+    if (objDB[user]["email"] === userEmail) {
+      return user;
+    }
+   
+  }
+  return false;
+};
+
+const findUserEmail = (objDB, userID) => {
+  if (objDB[userID]) {
+    return objDB[userID].email;
+  }
+  return false;
 };
 
 
@@ -47,10 +78,11 @@ app.get("/urls", (req, res) => {
   };
 
   if (req.cookies) {
+    const uID = req.cookies.userID;
     templateVars.userID = req.cookies.userID;
-  //  templateVars.userName = usersDatabase[req.cookies.userID].email;
+    templateVars["email"] = findUserEmail(usersDatabase, uID);
+   
   }
-
   res.render("urls_index", templateVars);
 });
 
@@ -59,59 +91,48 @@ app.get("/urls/new", (req, res) => {
     urls: urlDatabase,
 
   };
-  console.log("cookies", req.cookies);
+
   if (req.cookies) {
+    const uID = req.cookies.userID;
     templateVars.userID = req.cookies.userID;
-  //  templateVars.userName = usersDatabase[req.cookies.userID].email;
+    templateVars["email"] = findUserEmail(usersDatabase, uID);
+  
   }
   res.render("urls_new", templateVars);
 });
 
 //get registration page
 app.get("/register", (req, res) => {
-
-  res.render("urls_register");
+  //check cookie
+  const templateVars = {
+    urls: urlDatabase,
+  };
+  if (req.cookies) {
+    const uID = req.cookies.userID;
+ 
+    templateVars.userID = req.cookies.userID;
+    templateVars["email"] = findUserEmail(usersDatabase, uID);
+   
+  }
+  res.render("urls_register", templateVars);
 });
 //create a function to check if the email is already in system
 //looping through the usersDatabase
-const findUsers = (objDB, userEmail) => {
-  console.log("testing usersDatabase", objDB);
-  for (let user in objDB) {
-  //check if email already in
-    if (objDB[user]["email"] === userEmail) {
-      return true;
-    }
 
-  }
-  return false;
-};
-
-const findUserFromEmail = (objDB, userEmail) => {
-  console.log("testing usersDatabase", objDB);
-  for (let user in objDB) {
-   
-    if (objDB[user]["email"] === userEmail) {
-      return user;
-    }
-
-   
-  }
-  return false;
-};
 
 //post registration page
 app.post("/register", (req, res) => {
   //retrieve information from post request
-  console.log("register infor", req.body.email, req.body.password);
-  //check if the username is valid in exist
+ 
+  //check if the email is valid in exist
   //if email and pass are empty strings, response 400
   if (req.body.email === "" || req.body.password === "") {
-    return res.status(400).send("username and password required");
+    return res.status(400).send("email and password required");
   }
 
   if (findUsers(usersDatabase, req.body.email)) {
-    console.log("user is taken");
-    return res.status(400).send("username is taken");
+   
+    return res.status(400).send("email is taken");
   } else {
     //create an userID
     let email = req.body.email;
@@ -127,19 +148,14 @@ app.post("/register", (req, res) => {
     res.cookie("userID", userID);
 
   }
-  //assign an userID
 
-  console.log("updated userdb:", usersDatabase);
-  //create cookie to store usernmae
-
-  //re-direct to pages
   res.redirect("/urls");
   
 });
 
 
 app.post("/urls", (req, res) => {
-  console.log(req.body);
+
   const shortURL = generateRandomString();
   urlDatabase[shortURL] = req.body.longURL;
   res.redirect(`/urls/${shortURL}`);
@@ -149,8 +165,11 @@ app.post("/urls", (req, res) => {
 app.get("/hello", (req, res) => {
   const templateVars = {greeting: 'Hello World!'};
   if (req.cookies) {
+    const uID = req.cookies.userID;
+   
     templateVars.userID = req.cookies.userID;
-  //  templateVars.userName = usersDatabase[req.cookies.userID].email;
+    templateVars["email"] = findUserEmail(usersDatabase, uID);
+   
   }
   res.render("hello_world", templateVars);
 });
@@ -174,41 +193,60 @@ app.post("/urls/:id", (req, res) => {
 
 //created a new login page
 app.get("/login", (req, res) => {
+  //check cookie
+  const templateVars = {
+    urls: urlDatabase,
+ 
+  };
 
-  res.render("urls_login");
+  if (req.cookies) {
+    const uID = req.cookies.userID;
+    templateVars.userID = req.cookies.userID;
+    templateVars["email"] = findUserEmail(usersDatabase, uID);
+  
+  }
+
+  res.render("urls_login", templateVars);
 });
 //post user login ***need modification
 app.post("/login", (req, res) => {
-  //check if username in system
-  console.log("user loging in", req.body.username, req.body.password);
-  if (findUsers(usersDatabase, req.body.username)) {
+  //check if email address in system
+ 
+  if (findUsers(usersDatabase, req.body.email)) {
     //if it is true, we have this, then ,check the
-    const userID = findUserFromEmail(usersDatabase, req.body.username);
+    const userID = findUserFromEmail(usersDatabase, req.body.email);
     if (usersDatabase[userID].password === req.body.password) {
       //create cookie with userID
       res.cookie("userID", userID);
-      return res.redirect("/urls");
+      res.redirect("/urls");
+    } else {
+      return res.status(403).send("password is wrong!");
     }
+  } else {
+    return res.status(403).send("email cannot be found!");
   }
   //
 
 
-  res.redirect("/register");
+  //res.redirect("/register");
 });
 
 app.post("/logout", (req, res) => {
- // delete urlDatabase.username;
+
   res.clearCookie("userID");
-  res.redirect("/urls");
+  res.redirect("/login");
 
 });
 
 app.get("/urls/:shortURL", (req, res) => {
-  console.log("shortURL", req.params.shortURL);
+ 
   const templateVars = {shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL]};
   if (req.cookies) {
+    const uID = req.cookies.userID;
+  
     templateVars.userID = req.cookies.userID;
-  //  templateVars.userName = usersDatabase[req.cookies.userID].email;
+    templateVars["email"] = findUserEmail(usersDatabase, uID);
+    
   }
   res.render("urls_show", templateVars);
 });
@@ -226,8 +264,11 @@ app.get("/urls/:id", (req, res) => {
 
   };
   if (req.cookies) {
+    const uID = req.cookies.userID;
+   
     templateVars.userID = req.cookies.userID;
-  //  templateVars.userName = usersDatabase[req.cookies.userID].email;
+    templateVars["email"] = findUserEmail(usersDatabase, uID);
+   
   }
   res.render("urls_new",templateVars);
 });
