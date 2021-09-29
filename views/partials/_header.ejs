@@ -13,13 +13,12 @@
     <div>
       <% if (!username) { %>
       <form method="POST" action="/login">
-        <label for="username">username</label>
-        <input type="text" id="username" name="username"></input>
+        <input type="text" id="username" name="username" value = "Username"></input>
         <button type="submit" class="btn btn-primary">login</button>
       </form>
       <% } else {  %>
         <form method="POST" action="/logout">
-        <label for="username"> user: <%= username %> logged in!</label>
+        <label for="username"> Logged In As: <%= username %> </label>
        
         <button type="submit" class="btn btn-primary">logout</button>
       </form>
