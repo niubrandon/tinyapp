@@ -1,1 +1,0 @@
-console.log(Math.random().toString(26).substr(2, 6));

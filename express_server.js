@@ -24,15 +24,15 @@ const urlDatabase =  {
 };
 //usersDB
 const usersDatabase = {
-  "userRandomID": {
-    id: "userRandomID",
-    email: "user@example.com",
-    password: "purple-monkey-dinosaur"
+  "a1Xb7z": {
+    id: "a1Xb7z",
+    email: "admin@tinyapp.com",
+    password: "super-admin"
   },
-  "user2RandomID": {
-    id: "user2RandomID",
-    email: "user2@example.com",
-    password: "dishwasher-funk"
+  "z2Hc9a": {
+    id: "z2Hc9a",
+    email: "support@tinyapp.com",
+    password: "super-support"
   }
 };
 
@@ -77,11 +77,11 @@ app.get("/register", (req, res) => {
 const findUsers = (objDB, userEmail) => {
   console.log("testing usersDatabase", objDB);
   for (let user in objDB) {
-   
+  //check if email already in
     if (objDB[user]["email"] === userEmail) {
       return true;
     }
-     
+
   }
   return false;
 };
@@ -102,11 +102,16 @@ const findUserFromEmail = (objDB, userEmail) => {
 //post registration page
 app.post("/register", (req, res) => {
   //retrieve information from post request
-  console.log("register infor", req.body.email);
+  console.log("register infor", req.body.email, req.body.password);
   //check if the username is valid in exist
+  //if email and pass are empty strings, response 400
+  if (req.body.email === "" || req.body.password === "") {
+    return res.status(400).send("username and password required");
+  }
 
   if (findUsers(usersDatabase, req.body.email)) {
-    return "email already in exist!";
+    console.log("user is taken");
+    return res.status(400).send("username is taken");
   } else {
     //create an userID
     let email = req.body.email;
@@ -167,7 +172,12 @@ app.post("/urls/:id", (req, res) => {
   res.redirect("/urls");
 });
 
-//post user login
+//created a new login page
+app.get("/login", (req, res) => {
+
+  res.render("urls_login");
+});
+//post user login ***need modification
 app.post("/login", (req, res) => {
   //check if username in system
   console.log("user loging in", req.body.username, req.body.password);
