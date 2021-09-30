@@ -18,9 +18,15 @@ const generateRandomString = () => {
   return result;
 };
 //urlDB
-const urlDatabase =  {
-  "b2xVn2": "http://www.lighthouselabs.ca",
-  "9sm5xK": "http://www.google.com"
+const urlDatabase = {
+  b6UTxQ: {
+    longURL: "https://www.tsn.ca",
+    userID: "aJ48lW"
+  },
+  i3BoGr: {
+    longURL: "https://www.google.ca",
+    userID: "aJ48lW"
+  }
 };
 //usersDB
 const usersDatabase = {
@@ -72,34 +78,57 @@ app.get("/", (req, res) => {
   res.send("Hello!");
 });
 
-app.get("/urls", (req, res) => {
-  const templateVars = {
-    urls: urlDatabase
-  };
-
-  if (req.cookies) {
-    const uID = req.cookies.userID;
-    templateVars.userID = req.cookies.userID;
-    templateVars["email"] = findUserEmail(usersDatabase, uID);
-   
-  }
-  res.render("urls_index", templateVars);
-});
-
 app.get("/urls/new", (req, res) => {
   const templateVars = {
     urls: urlDatabase,
 
   };
 
-  if (req.cookies) {
+  //check if the cookie has username in database
+  if (req.cookies.userID !== undefined) {
     const uID = req.cookies.userID;
     templateVars.userID = req.cookies.userID;
     templateVars["email"] = findUserEmail(usersDatabase, uID);
-  
+    console.log("render urls_new, has cookies", req.cookies.userID);
+    return res.render("urls_new", templateVars);
   }
-  res.render("urls_new", templateVars);
+  console.log("user not logged in, redirect to user login");
+  return res.redirect("/login");
 });
+
+//******might be a bug */
+app.post("/urls/new", (req, res) => {
+  //user must be logged in already to create new url
+  console.log("create a new url", req.body);
+
+  urlDatabase[generateRandomString()] = {
+    userID: req.cookies.userID,
+    longURL: req.body.longURL
+  };
+  console.log("updated database", urlDatabase);
+  res.redirect("/urls");
+});
+
+app.get("/urls", (req, res) => {
+  //everyone can visit urls list
+  const templateVars = {
+    urls: urlDatabase
+  };
+
+  if (req.cookies.userID !== undefined) {
+    const uID = req.cookies.userID;
+    templateVars.userID = req.cookies.userID;
+    templateVars["email"] = findUserEmail(usersDatabase, uID);
+    
+  } else {
+    templateVars.userID = undefined;
+    templateVars["email"] = undefined;
+  }
+  res.render("urls_index", templateVars);
+});
+
+
+
 
 //get registration page
 app.get("/register", (req, res) => {
@@ -187,7 +216,7 @@ app.post("/urls/:shortURL/delete", (req, res) => {
 
 //post update the updated url
 app.post("/urls/:id", (req, res) => {
-  urlDatabase[req.params.id] = req.body.updatedFullUrl;
+  urlDatabase[req.params.id].longURL = req.body.updatedFullUrl;
   res.redirect("/urls");
 });
 
@@ -240,10 +269,9 @@ app.post("/logout", (req, res) => {
 
 app.get("/urls/:shortURL", (req, res) => {
  
-  const templateVars = {shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL]};
+  const templateVars = {shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL].longURL};
   if (req.cookies) {
     const uID = req.cookies.userID;
-  
     templateVars.userID = req.cookies.userID;
     templateVars["email"] = findUserEmail(usersDatabase, uID);
     
@@ -251,26 +279,36 @@ app.get("/urls/:shortURL", (req, res) => {
   res.render("urls_show", templateVars);
 });
 
-app.get("/u/:shortURL", (req, res) => {
-  const longURL = urlDatabase[req.params.shortURL];
-  res.redirect(longURL);
+/* app.get("/u/:shortURL", (req, res) => {
+  const longURL = urlDatabase[req.params.shortURL].longURL;
+  res.render("/urls");
 });
+ */
 
-
-app.get("/urls/:id", (req, res) => {
+app.get("/u/:id", (req, res) => {
 
   const templateVars = {
     urls: urlDatabase,
 
   };
-  if (req.cookies) {
-    const uID = req.cookies.userID;
-   
-    templateVars.userID = req.cookies.userID;
-    templateVars["email"] = findUserEmail(usersDatabase, uID);
+  console.log("reqparams", req.params.id);
+  //check if id is included in the userDatabase key list
+  if (!Object.keys(usersDatabase).includes(req.params.id)) {
+    return res.status(401).send("user is not in the database");
+  } else {
+    // since userID in database, check if user is logged in or not
+    if (req.cookies.user !== undefined) {
+      const uID = req.cookies.userID;
+      templateVars.userID = req.cookies.userID;
+      templateVars["email"] = findUserEmail(usersDatabase, uID);
+      res.render("urls_new",templateVars);
+    } else {
+      //not logged in, return to urls
+      res.redirect("/urls");
+    }
    
   }
-  res.render("urls_new",templateVars);
+
 });
 
 
