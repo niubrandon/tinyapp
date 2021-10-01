@@ -4,6 +4,7 @@ const cookieParser = require('cookie-parser');
 const bcrypt = require('bcryptjs');
 const cookieSession = require('cookie-session');
 const salt = bcrypt.genSaltSync(10);
+const { findUsers, getUserByEmail, findUserEmail, urlsForUser, generateRandomString } = require('./helpers');
 
 
 const app = express();
@@ -19,14 +20,6 @@ app.use(cookieSession({
 }));
 
 
-const generateRandomString = () => {
-  const str = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-  let result = "";
-  for (let i = 0; i < 6; i++) {
-    result += str[Math.floor(Math.random() * 61)];
-  }
-  return result;
-};
 //urlDB
 const urlDatabase = {
   b6UTxQ: {
@@ -52,70 +45,21 @@ const usersDatabase = {
   }
 };
 
-const findUsers = (objDB, userEmail) => {
-
-  for (let user in objDB) {
-
-    if (objDB[user]["email"] === userEmail) {
-      return true;
-    }
-
-  }
-  return false;
-};
-
-const findUserFromEmail = (objDB, userEmail) => {
- 
-  for (let user in objDB) {
-   
-    if (objDB[user]["email"] === userEmail) {
-      return user;
-    }
-   
-  }
-  return false;
-};
-
-const findUserEmail = (objDB, userID) => {
-  if (objDB[userID]) {
-    return objDB[userID].email;
-  }
-  return false;
-};
-
-const urlsForUser = (urlDatabase, user) => {
-  let result = {};
-  for (let key in urlDatabase) {
-    
-    if (urlDatabase[key].userID === user) {
-      result[key] = {
-        "longURL"  : urlDatabase[key].longURL,
-        "userID" : user
-      };
-    }
-    
-  }
-  return result;
-};
-
 
 app.get("/urls/new", (req, res) => {
   const templateVars = {
     urls: urlDatabase,
-    userID: null
+    userID: null,
+    email: null
 
   };
 
-  //check if the cookie has username in database
   const uID = req.session.userID;
   if (uID) {
-    
     templateVars.userID = uID;
-    templateVars["email"] = findUserEmail(usersDatabase, uID);
-    console.log("render urls_new, has cookies", uID);
+    templateVars.email = findUserEmail(usersDatabase, uID);
     return res.render("urls_new", templateVars);
   }
-  console.log("user not logged in, redirect to user login");
   return res.redirect("/login");
 });
 
@@ -129,45 +73,42 @@ app.post("/urls/new", (req, res) => {
   res.redirect("/urls");
 });
 
+
 app.get("/urls", (req, res) => {
-  console.log("userDatabase", usersDatabase);
+
   const templateVars = {
-    urls: urlDatabase
+    urls: urlDatabase,
+    userID: null,
+    email: null,
+
   };
-  console.log("cookiesession", req.session.userID);
+
   const uID = req.session.userID;
+
   if (uID) {
-    
     templateVars.userID = uID;
     templateVars.email = findUserEmail(usersDatabase, uID);
+    //filter the urls created by user
     templateVars.urls = urlsForUser(urlDatabase, uID);
-    console.log("filtered data is", templateVars.urls);
     res.render("urls_index", templateVars);
   } else {
-    //user not logged in
-    templateVars.userID = null;
-    templateVars["email"] = undefined;
+
     return res.status(401).send("you should log in first or register an account. redirect to login pages");
-    
   }
- 
 });
 
 
-//get registration page
+
 app.get("/register", (req, res) => {
   //check cookie
   const templateVars = {
     urls: urlDatabase,
     userID: undefined
   };
-  /* if (req.cookies) {
-    const uID = req.cookies.userID;
- 
-    templateVars.userID = req.cookies.userID;
-    templateVars["email"] = findUserEmail(usersDatabase, uID);
-   
-  } */
+  const uID = req.session.userID;
+  if (uID) {
+    res.redirect('/urls');
+  }
   res.render("urls_register", templateVars);
 });
 
@@ -201,34 +142,31 @@ app.post("/register", (req, res) => {
   
 });
 
-
-app.post("/urls/:shortURL/update", (req, res) => {
+//pending
+app.post("/urls", (req, res) => {
   const uID = req.session.userID;
   if (uID) {
-    //update here if it matches userID
-
-    if (urlDatabase[req.params.shortURL].userID === uID) {
-      //redirect to update page
-      res.redirect(`/urls/${req.params.shortURL}`);
-    } else {
-      res.status(401).send("You can't update this one, it doesn't belong to you");
-    }
-   
+    //user logged in, generate a shortURL and save it
+    const randomURL = generateRandomString();
+    urlDatabase[randomURL] = {
+      userID: uID,
+      longURL: null
+    };
+    res.redirect(`/urls/${randomURL}`);
   } else {
-    res.status(401).send("you have to login first before any update");
+    res.status(401).send("you need to login first");
   }
-  res.redirect("/urls");
-
 });
 
 
-app.post("/urls/:shortURL/delete", (req, res) => {
+app.post("/urls/:id/delete", (req, res) => {
   //check if it is user for delete
   const uID = req.session.userID;
   if (uID) {
     //delete here if it matches userID
-    if (urlDatabase[req.params.shortURL].userID === uID) {
-      delete urlDatabase[req.params.shortURL];
+    if (urlDatabase[req.params.id].userID === uID) {
+      delete urlDatabase[req.params.id];
+      res.redirect("/urls");
     } else {
       res.status(401).send("You can't delete this one, it doesn't belong to you");
     }
@@ -236,26 +174,21 @@ app.post("/urls/:shortURL/delete", (req, res) => {
   } else {
     res.status(401).send("you have to login first before any delete or update");
   }
-  res.redirect("/urls");
+ 
  
 });
   
-//created a new login page
+
 app.get("/login", (req, res) => {
-  //check cookie
   const templateVars = {
     urls: urlDatabase,
-    userID: undefined
+    userID: undefined,
   };
-  console.log("cookiesession", req.session.userID);
-  
-/*   if (req.session.userID) {
-    const uID = req.session.userID;
-    templateVars.userID = uID;
-    templateVars["email"] = findUserEmail(usersDatabase, uID);
-  
+
+  const uID = req.session.userID;
+  if (uID) {
+    res.redirect('/urls');
   }
- */
   res.render("urls_login", templateVars);
 });
 
@@ -264,7 +197,7 @@ app.post("/login", (req, res) => {
  
   if (findUsers(usersDatabase, req.body.email)) {
 
-    const userID = findUserFromEmail(usersDatabase, req.body.email);
+    const userID = getUserByEmail(req.body.email, usersDatabase);
     //check password with bcrypt.comapreSync()
     const rawPassword = req.body.password;
     const hash = usersDatabase[userID].password;
@@ -286,46 +219,86 @@ app.post("/logout", (req, res) => {
 
   req.session.userID = null;
   //res.clearCookie("userID");
-  res.redirect("/login");
+  res.redirect("/urls");
 
 });
 
 
+app.get("/urls/:id", (req, res) => {
 
-app.get("/urls/:shortURL", (req, res) => {
- // shortURL is the name
- //console.log("shortURL is", req.params);
   const templateVars = {
-    shortURL: req.params.shortURL,
-    "longURL": "",
-    userID: undefined
+    shortURL: req.params.id,
+    longURL: null,
+    userID: null
   };
+  //check if the shortURL exist
+  if (!Object.keys(urlDatabase).includes(req.params.id)) {
+    return res.status(401).send("This shortURL is not exist!");
+  }
 
   const uID = req.session.userID;
   if (uID) {
     templateVars.userID = uID;
-    templateVars["email"] = findUserEmail(usersDatabase, uID);
-    //check if longURL exists
-    if (urlDatabase[req.params.shortURL]) {
-      templateVars.longURL = urlDatabase[req.params.shortURL].longURL;
+    templateVars.email = findUserEmail(usersDatabase, uID);
+    //check if user owns the url
+    if (urlDatabase[req.params.id].userID === uID) {
+      templateVars.longURL = urlDatabase[req.params.id].longURL;
+      templateVars.userID = uID;
       res.render("urls_show", templateVars);
     } else {
       //return error, this one doesn't exist
-      res.status(401).send("This shortURL is not existed");
+      res.status(401).send("The user doesn't own this shortURL");
     }
-    
-    
+     
   } else {
-    res.status(410).send("login first");
+    res.status(401).send("login first");
   }
   
 });
 
-app.post("/urls/:shortURL", (req, res) => {
 
-  urlDatabase[req.params.shortURL].longURL = req.body.updatedFullUrl;
+app.post("/urls/:id", (req, res) => {
+
+  //if user login and own the URL
+  const uID = req.session.userID;
+  if (uID) {
+    //login and own the url?
+
+    if (urlDatabase[req.params.id].userID === uID) {
+      //update the url
+      urlDatabase[req.params.id].longURL = req.body.updatedFullUrl;
+      res.redirect('/urls');
+    } else {
+      res.status(401).send("You can't delete this one, it doesn't belong to you");
+    }
+   
+  } else {
+    res.status(401).send("you have to login first before you modify the url");
+  }
   res.redirect("/urls");
+
+ 
 });
+
+app.post("/urls/:shortURL/update", (req, res) => {
+  const uID = req.session.userID;
+  if (uID) {
+    //update here if it matches userID
+
+    if (urlDatabase[req.params.shortURL].userID === uID) {
+      //redirect to update page
+      res.redirect(`/urls/${req.params.shortURL}`);
+    } else {
+      res.status(401).send("You can't update this one, it doesn't belong to you");
+    }
+   
+  } else {
+    res.status(401).send("you have to login first before any update");
+  }
+  res.redirect("/urls");
+
+});
+
 
 
 
@@ -356,24 +329,27 @@ app.get("/u/:", (req, res) => {
 });
 
 
+app.get("/u/:id", (req, res) => {
 
-///
-
-app.get("/", (req, res) => {
-  res.send("Hello!");
+  //check if the shortURL exist
+  if (!Object.keys(urlDatabase).includes(req.params.id)) {
+    return res.status(401).send("This shortURL is not exist!");
+  } else {
+    res.redirect(urlDatabase[req.params.id].longURL);
+  }
+  
 });
 
 
-app.get("/hello", (req, res) => {
-  const templateVars = {greeting: 'Hello World!'};
-  if (req.cookies) {
-    const uID = req.cookies.userID;
-   
-    templateVars.userID = req.cookies.userID;
-    templateVars["email"] = findUserEmail(usersDatabase, uID);
-   
+app.get("/", (req, res) => {
+  
+  const uID = req.session.userID;
+  if (uID) {
+    res.redirect('/urls');
+  } else {
+    res.redirect('/login');
   }
-  res.render("hello_world", templateVars);
+
 });
 
 
@@ -394,3 +370,4 @@ app.get("/fetch", (req, res) => {
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
 });
+
