@@ -1,6 +1,7 @@
 const express = require("express");
 const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
+const methodOverride = require('method-override');
 const bcrypt = require('bcryptjs');
 const cookieSession = require('cookie-session');
 const salt = bcrypt.genSaltSync(10);
@@ -18,17 +19,30 @@ app.use(cookieSession({
   name: 'session',
   keys: ['ottawa-5678', '1290-68-cookies']
 }));
+app.use(methodOverride('_method'));
 
 
 //urlDB
 const urlDatabase = {
   b6UTxQ: {
     longURL: "https://www.tsn.ca",
-    userID: "aJ48lW"
+    userID: "aJ48lW",
+    visits: 1
   },
   i3BoGr: {
     longURL: "https://www.google.ca",
-    userID: "aJ48lW"
+    userID: "aJ48lW",
+    visits: 1
+  },
+  c3A1il: {
+    longURL: "https://www.mun.ca",
+    userID: "a1Xb7z",
+    visits: 1
+  },
+  a99xJm: {
+    longURL: "https://www.ut.com",
+    userID: "a1Xb7z",
+    visits: 1
   }
 };
 //usersDB
@@ -67,7 +81,8 @@ app.get("/urls/new", (req, res) => {
 app.post("/urls/new", (req, res) => {
   urlDatabase[generateRandomString()] = {
     userID: req.session.userID,
-    longURL: req.body.longURL
+    longURL: req.body.longURL,
+    visits: 1
   };
 
   res.redirect("/urls");
@@ -92,7 +107,7 @@ app.get("/urls", (req, res) => {
     res.render("urls_index", templateVars);
   } else {
 
-    return res.status(401).send("you should log in first or register an account. redirect to login pages");
+    return res.status(401).send("you should log in first or register an account.");
   }
 });
 
@@ -156,7 +171,7 @@ app.post("/urls", (req, res) => {
 });
 
 
-app.post("/urls/:id/delete", (req, res) => {
+app.delete("/urls/:id/delete", (req, res) => {
   const uID = req.session.userID;
   if (uID) {
     if (urlDatabase[req.params.id].userID === uID) {
@@ -218,7 +233,9 @@ app.get("/urls/:id", (req, res) => {
   const templateVars = {
     shortURL: req.params.id,
     longURL: null,
-    userID: null
+    userID: null,
+    visits: 0
+  
   };
 
   if (!Object.keys(urlDatabase).includes(req.params.id)) {
@@ -233,6 +250,9 @@ app.get("/urls/:id", (req, res) => {
     if (urlDatabase[req.params.id].userID === uID) {
       templateVars.longURL = urlDatabase[req.params.id].longURL;
       templateVars.userID = uID;
+      templateVars.visits = urlDatabase[req.params.id].visits + 1;
+      urlDatabase[req.params.id].visits = templateVars.visits;
+      
       res.render("urls_show", templateVars);
     } else {
       res.status(401).send("The user doesn't own this shortURL");
@@ -245,7 +265,7 @@ app.get("/urls/:id", (req, res) => {
 });
 
 
-app.post("/urls/:id", (req, res) => {
+app.put("/urls/:id", (req, res) => {
 
   const uID = req.session.userID;
   if (uID) {
@@ -297,7 +317,7 @@ app.get("/u/:", (req, res) => {
     if (req.cookies.user !== undefined) {
       const uID = req.cookies.userID;
       templateVars.userID = req.cookies.userID;
-      templateVars["email"] = findUserEmail(usersDatabase, uID);
+      templateVars.email = findUserEmail(usersDatabase, uID);
       res.render("urls_new",templateVars);
     } else {
       res.redirect("/urls");
