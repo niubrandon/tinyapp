@@ -171,7 +171,7 @@ app.post("/urls", (req, res) => {
 });
 
 
-app.delete("/urls/:id/delete", (req, res) => {
+app.post("/urls/:id/delete", (req, res) => {
   const uID = req.session.userID;
   if (uID) {
     if (urlDatabase[req.params.id].userID === uID) {
@@ -222,7 +222,7 @@ app.post("/login", (req, res) => {
 });
 
 app.post("/logout", (req, res) => {
-  req.session.userID = null;
+  req.session = null;
   res.redirect("/urls");
 
 });
@@ -265,7 +265,7 @@ app.get("/urls/:id", (req, res) => {
 });
 
 
-app.put("/urls/:id", (req, res) => {
+app.post("/urls/:id", (req, res) => {
 
   const uID = req.session.userID;
   if (uID) {
@@ -304,36 +304,20 @@ app.post("/urls/:shortURL/update", (req, res) => {
 
 
 
-
-app.get("/u/:", (req, res) => {
-  const templateVars = {
-    urls: urlDatabase,
-
-  };
-  console.log("reqparams", req.params.id);
-  if (!Object.keys(usersDatabase).includes(req.params.id)) {
-    return res.status(401).send("user is not in the database");
-  } else {
-    if (req.cookies.user !== undefined) {
-      const uID = req.cookies.userID;
-      templateVars.userID = req.cookies.userID;
-      templateVars.email = findUserEmail(usersDatabase, uID);
-      res.render("urls_new",templateVars);
-    } else {
-      res.redirect("/urls");
-    }
-   
-  }
-
-});
-
-
 app.get("/u/:id", (req, res) => {
-
+  console.log("redirect url", req.params.id, urlDatabase[req.params.id].longURL, !Object.keys(urlDatabase).includes(req.params.id));
+  console.log("database",urlDatabase);
+  let lURL = urlDatabase[req.params.id].longURL;
+  if (lURL.startsWith("http://") || lURL.startsWith("https://")) {
+    //valid full url
+  } else {
+    lURL = "https://" + lURL;
+  }
   if (!Object.keys(urlDatabase).includes(req.params.id)) {
     return res.status(401).send("This shortURL is not exist!");
   } else {
-    res.redirect(urlDatabase[req.params.id].longURL);
+
+    res.redirect(lURL);
   }
   
 });
