@@ -10,23 +10,20 @@
 </head>
 <body>
   <%- include('partials/_header') %>
-  <div style = "margin-left: 20px">
-    <h1>Login</h1>
-    <form method="POST" action="/login">
-      <div>
-        <label>Email address</label>
+  <div>
+    
+    <form method="POST" action="/login" class="mb-3" style="width: fit-content; margin: auto; margin-top: 30%;">
+      
+      <div>     
+        <label for="email" class="form-label" style="font-size: 32px; font-weight: bold;font-family: Arial, Helvetica, sans-serif;">Login</label>
+        <input type="email" class="form-control" id="email" name="email" placeholder="Email" style="border-radius: 8px;">
+        
+      </div>
+      <div class="mb-3" style="margin-top: 10px;">
+        <input type="password" class="form-control" name="password" placeholder="Password" style="border-radius: 8px;">
       </div>
       <div>
-        <input type="email" id="email" name="email" placeholder="Enter email"></input>
-      </div>
-      <div>
-        <label>Password</label>
-      </div>
-      <div>
-        <input type="password" name="password" placeholder="Password" ></input>
-      </div>
-      <div>
-        <button type="submit" class="btn btn-primary">login</button>
+        <button type="submit" class="btn btn-primary" style="width: 100%; border-radius: 8px;">login</button>
       </div>
       
   </form>
