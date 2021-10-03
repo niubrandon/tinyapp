@@ -170,7 +170,7 @@ app.post("/urls", (req, res) => {
   }
 });
 
-
+//Restful app.delete()
 app.post("/urls/:id/delete", (req, res) => {
   const uID = req.session.userID;
   if (uID) {
@@ -285,6 +285,7 @@ app.post("/urls/:id", (req, res) => {
  
 });
 
+//Restful app.put()
 app.post("/urls/:shortURL/update", (req, res) => {
   const uID = req.session.userID;
   if (uID) {
